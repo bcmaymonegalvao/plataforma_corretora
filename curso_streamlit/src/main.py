@@ -16,7 +16,7 @@ def carregar_dados(empresas):
     return cotacoes_acao
 
 def carregar_tickers_acoes():
-    url = "https://raw.githubusercontent.com/seu-usuario/seu-repositorio/main/curso_streamlit/src/IBOV.csv"
+    url = "https://github.com/bcmaymonegalvao/plataforma_corretora/blob/main/curso_streamlit/src/IBOV.csv"
     base_tickers = pd.read_csv(url, sep = ";")
     tickers = list(base_tickers["Código"])
     tickers = [item + ".SA" for item in tickers]
