@@ -29,7 +29,7 @@ dados = carregar_dados(acoes)
 # criar a interface do streamlit
 st.write("""
 # App Preço de ações
-O gráfico abaixo representa a evolução do preço das ações do Itaú (ITUB4) ao longo dos anos
+O gráfico abaixo representa a evolução do preço das ações da BOVESPA ao longo dos anos
 """)#markdown
 
 # prepara as visualizações = filtros
