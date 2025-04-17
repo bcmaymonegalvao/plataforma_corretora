@@ -16,7 +16,8 @@ def carregar_dados(empresas):
     return cotacoes_acao
 
 def carregar_tickers_acoes():
-    base_tickers = pd.read_csv("IBOV.csv", sep = ";")
+    url = "https://raw.githubusercontent.com/seu-usuario/seu-repositorio/main/curso_streamlit/src/IBOV.csv"
+    base_tickers = pd.read_csv(url, sep = ";")
     tickers = list(base_tickers["Código"])
     tickers = [item + ".SA" for item in tickers]
     return tickers
@@ -81,11 +82,11 @@ total_final_carteira = sum(carteira)
 performance_carteira = total_final_carteira / total_inicial_carteira - 1
 
 if performance_carteira > 0:
-    texto_performance_carteira = f"Performance da carteira com todos os ativos: :green[{performance_ativo: .1%}]"
+    texto_performance_carteira = f"Performance da carteira com todos os ativos: :green[{performance_ativo:.1%}]"
 elif performance_ativo < 0:
-    texto_performance_carteira = f"Performance da carteira com todos os ativos: :red[{performance_ativo: .1%}]"    
+    texto_performance_carteira = f"Performance da carteira com todos os ativos: :red[{performance_ativo:.1%}]"    
 else:
-    texto_performance_carteira = f"Performance da carteira com todos os ativos: {performance_ativo: .1%}"
+    texto_performance_carteira = f"Performance da carteira com todos os ativos: {performance_ativo:.1%}"
 
 st.write(f"""
 ### Performance dos Ativos
