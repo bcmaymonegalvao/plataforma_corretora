@@ -1,5 +1,6 @@
 # importar as bibliotecas
 import streamlit as st
+import numpy as np
 import pandas as pd
 import yfinance as yf
 from datetime import timedelta
@@ -61,6 +62,7 @@ with st.sidebar:
                 dados = dados.rename(columns={lista_acoes[0]: "Close"})
 
 # Exibição do gráfico
+# Exibição do gráfico
 if not lista_acoes:
     st.info("ℹ️ Selecione pelo menos uma ação no menu à esquerda para visualizar o gráfico")
     st.line_chart(pd.DataFrame())  # Gráfico vazio
@@ -68,7 +70,19 @@ else:
     if dados.empty:
         st.warning("⚠️ Não foi possível carregar dados para as ações selecionadas")
     else:
-        st.line_chart(dados)
+        # Criar um DataFrame combinado com preços e EMAs
+        dados_plot = pd.DataFrame()
+        
+        for acao in dados.columns:
+            # Adiciona o preço original
+            dados_plot[f'{acao}'] = dados[acao]
+            
+            # Calcula a EMA de 9 dias
+            dados_plot[f'{acao}_EMA9'] = dados[acao].ewm(span=9, adjust=False).mean()
+        
+        # Plotar o gráfico com ambas as linhas
+        st.line_chart(dados_plot)
+        
 
 # Cálculo de performance (só executa se houver ações selecionadas)
 if lista_acoes and not dados.empty:
@@ -85,23 +99,23 @@ if lista_acoes and not dados.empty:
             carteira[i] = carteira[i] * (1 + performance_ativo)
             
             if performance_ativo > 0:
-                texto_performance_ativos += f"\n{acao}: :green[{performance_ativo:.1%}]"
+                texto_performance_ativos += f"  \n{acao}: :green[{performance_ativo:.1%}]"
             elif performance_ativo < 0:
-                texto_performance_ativos += f"\n{acao}: :red[{performance_ativo:.1%}]"
+                texto_performance_ativos += f"  \n{acao}: :red[{performance_ativo:.1%}]"
             else:
-                texto_performance_ativos += f"\n{acao}: {performance_ativo:.1%}"
+                texto_performance_ativos += f"  \n{acao}: {performance_ativo:.1%}"
         except KeyError:
-            texto_performance_ativos += f"\n{acao}: Dados indisponíveis"
+            texto_performance_ativos += f"  \n{acao}: Dados indisponíveis"
     
     total_final_carteira = sum(carteira)
     performance_carteira = total_final_carteira / total_inicial_carteira - 1
     
     if performance_carteira > 0:
-        texto_performance_carteira = f"Performance da carteira: :green[{performance_carteira:.1%}]"
+        texto_performance_carteira = f"Performance da carteira:  \n:green[{performance_carteira:.1%}]"
     elif performance_carteira < 0:
-        texto_performance_carteira = f"Performance da carteira: :red[{performance_carteira:.1%}]"
+        texto_performance_carteira = f"Performance da carteira:  \n:red[{performance_carteira:.1%}]"
     else:
-        texto_performance_carteira = f"Performance da carteira: {performance_carteira:.1%}"
+        texto_performance_carteira = f"Performance da carteira:  \n{performance_carteira:.1%}"
     
     st.write(f"""
     ### Performance dos Ativos
