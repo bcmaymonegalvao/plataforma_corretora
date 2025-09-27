@@ -12,8 +12,21 @@ st.set_page_config(layout="wide")
 @st.cache_data
 def carregar_tickers_acoes():
     url = "https://raw.githubusercontent.com/bcmaymonegalvao/plataforma_corretora/refs/heads/main/curso_streamlit/src/IBOV.csv"
-    base_tickers = pd.read_csv(url, sep=";")
-    return [item + ".SA" for item in base_tickers["Código"]]
+    base_tickers = pd.read_csv(url, sep=";", encoding="cp1252")
+    bom_cp1252 = ''.join(chr(code) for code in (239, 187, 191))
+    base_tickers.columns = (
+        base_tickers.columns.str.replace("\ufeff", "", regex=False)
+        .str.replace(bom_cp1252, "", regex=False)
+        .str.strip()
+    )
+    codigo_coluna = base_tickers.columns[0]
+    tickers = (
+        base_tickers[codigo_coluna]
+        .dropna()
+        .astype(str)
+        .str.strip()
+    )
+    return [f"{ticker}.SA" for ticker in tickers if ticker]
 
 @st.cache_data(ttl=3600)  # Cache por 1 hora para evitar chamadas repetidas ao Yahoo Finance
 def carregar_dados(empresas):
