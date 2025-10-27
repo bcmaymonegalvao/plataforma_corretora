@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import yfinance as yf  # Substituído pandas_datareader
+import yfinance as yf
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
@@ -10,11 +10,11 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
-import os
+import time
 
 # Configuração da página
 st.set_page_config(
-    page_title="Análise de Regressão Linear - BOVESPA",
+    page_title="Análise de Regressão Linear - Ações",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -35,37 +35,81 @@ def carregar_tickers_acoes():
         "SIE.DE", "BMW.DE", "AIR.PA", "MC.PA", "SAN.MC" # Europa
     ]
 
-@st.cache_data(ttl=3600)
-def carregar_dados_yfinance(ticker):
-    try:
-        end = datetime.today()
-        start = end - timedelta(days=1800)
-        
-        # Usar yfinance diretamente
-        df = yf.download(ticker, start=start, end=end, progress=False)
-        
-        if df.empty:
-            st.warning(f"Nenhum dado retornado para {ticker}")
+@st.cache_data(ttl=7200)  # Cache por 2 horas
+def carregar_dados_yfinance(ticker, max_retries=3):
+    """Carrega dados com retry automático em caso de rate limit"""
+    
+    for tentativa in range(max_retries):
+        try:
+            end = datetime.today()
+            start = end - timedelta(days=1800)
+            
+            # Configurar yfinance com auto_adjust explícito
+            df = yf.download(
+                ticker, 
+                start=start, 
+                end=end, 
+                progress=False,
+                auto_adjust=True  # Evita o FutureWarning
+            )
+            
+            if df.empty:
+                if tentativa < max_retries - 1:
+                    time.sleep(2 ** tentativa)  # Backoff exponencial: 1s, 2s, 4s
+                    continue
+                return pd.DataFrame()
+            
+            # Ajustar nomes de colunas (yfinance usa maiúsculas)
+            if isinstance(df.columns, pd.MultiIndex):
+                df.columns = df.columns.droplevel(1)
+            
+            df.columns = [col.capitalize() if isinstance(col, str) else col for col in df.columns]
+            
+            # Feature engineering
+            df['Dia'] = range(len(df))
+            df['Retorno'] = df['Close'].pct_change()
+            
+            # Verificar se Volume existe
+            if 'Volume' in df.columns:
+                volume_std = df['Volume'].std()
+                if volume_std > 0:
+                    df['Volume_Norm'] = (df['Volume'] - df['Volume'].mean()) / volume_std
+                else:
+                    df['Volume_Norm'] = 0
+            else:
+                df['Volume_Norm'] = 0
+                
+            df['Volatilidade'] = df['Retorno'].rolling(window=20).std()
+            df['MA7'] = df['Close'].rolling(window=7).mean()
+            df['MA21'] = df['Close'].rolling(window=21).mean()
+            df['Range'] = df['High'] - df['Low']
+            df = df.dropna()
+            
+            return df
+            
+        except Exception as e:
+            error_msg = str(e)
+            
+            # Rate limit detectado
+            if 'Rate' in error_msg or '429' in error_msg or 'Too Many Requests' in error_msg:
+                if tentativa < max_retries - 1:
+                    wait_time = 2 ** (tentativa + 1)
+                    st.warning(f"⏳ Rate limit atingido. Aguardando {wait_time}s antes de tentar novamente...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    st.error(f"❌ Rate limit: Yahoo Finance bloqueou temporariamente as requisições. Tente novamente em alguns minutos.")
+                    return pd.DataFrame()
+            
+            # Outros erros
+            if tentativa < max_retries - 1:
+                time.sleep(2 ** tentativa)
+                continue
+            
+            st.error(f"❌ Erro ao carregar {ticker}: {error_msg}")
             return pd.DataFrame()
-        
-        # Ajustar nomes de colunas (yfinance usa maiúsculas)
-        df.columns = df.columns.str.capitalize()
-        
-        # Feature engineering
-        df['Dia'] = range(len(df))
-        df['Retorno'] = df['Close'].pct_change()
-        df['Volume_Norm'] = (df['Volume'] - df['Volume'].mean()) / df['Volume'].std()
-        df['Volatilidade'] = df['Retorno'].rolling(window=20).std()
-        df['MA7'] = df['Close'].rolling(window=7).mean()
-        df['MA21'] = df['Close'].rolling(window=21).mean()
-        df['Range'] = df['High'] - df['Low']
-        df = df.dropna()
-        
-        return df
-        
-    except Exception as e:
-        st.error(f"Erro ao baixar dados de {ticker}: {str(e)}")
-        return pd.DataFrame()
+    
+    return pd.DataFrame()
 
 def treinar_modelos(X_train, y_train, X_test, y_test):
     modelos = {}
@@ -158,6 +202,9 @@ acoes = carregar_tickers_acoes()
 with st.sidebar:
     st.header("⚙️ Configurações")
     acao_selecionada = st.selectbox("Escolha uma ação", acoes, index=0)
+    
+    st.info("💡 **Dica**: Se encontrar erro de rate limit, aguarde alguns minutos antes de tentar novamente.")
+    
     st.subheader("Divisão dos Dados")
     test_size = st.slider("Tamanho do conjunto de teste (%)", 10, 40, 20) / 100
     st.subheader("Features para o Modelo")
@@ -167,14 +214,28 @@ with st.sidebar:
     usar_range = st.checkbox("Usar Range (High-Low)", value=True)
 
 if acao_selecionada:
-    dados = carregar_dados_yfinance(acao_selecionada)
+    with st.spinner(f"🔄 Carregando dados de {acao_selecionada}..."):
+        dados = carregar_dados_yfinance(acao_selecionada)
     
     if dados.empty:
-        st.error("❌ Não foi possível carregar dados para esta ação.")
+        st.error(f"❌ Não foi possível carregar dados para {acao_selecionada}.")
+        st.info("""
+        **Possíveis causas:**
+        - Rate limit do Yahoo Finance (aguarde alguns minutos)
+        - Ticker inválido ou sem dados disponíveis
+        - Problemas temporários de conexão
+        
+        **Sugestões:**
+        - Tente outra ação da lista
+        - Aguarde 5-10 minutos antes de tentar novamente
+        - Recarregue a página (F5)
+        """)
     else:
+        st.success(f"✅ Dados carregados com sucesso! ({len(dados)} observações)")
+        
         # Preparar features
         features_disponiveis = ['Dia']
-        if usar_volume:
+        if usar_volume and 'Volume_Norm' in dados.columns:
             features_disponiveis.append('Volume_Norm')
         if usar_volatilidade:
             features_disponiveis.append('Volatilidade')
@@ -197,7 +258,8 @@ if acao_selecionada:
         X_test_scaled = scaler.transform(X_test)
         
         # Treinar modelos
-        modelos, resultados = treinar_modelos(X_train_scaled, y_train, X_test_scaled, y_test)
+        with st.spinner("🤖 Treinando modelos..."):
+            modelos, resultados = treinar_modelos(X_train_scaled, y_train, X_test_scaled, y_test)
         
         # Criar abas
         tab1, tab2, tab3, tab4 = st.tabs([
@@ -210,8 +272,6 @@ if acao_selecionada:
         # TAB 1: VISÃO GERAL
         with tab1:
             st.header("Visão Geral dos Dados e Modelos")
-            
-            st.success("✅ Dados carregados via yfinance")
             
             # Métricas principais
             col1, col2, col3, col4 = st.columns(4)
@@ -235,18 +295,20 @@ if acao_selecionada:
             # Gráfico de preço histórico
             st.subheader("Histórico de Preços")
             fig, ax = plt.subplots(figsize=(12, 6))
-            ax.plot(dados.index, dados['Close'], label='Preço de Fechamento', linewidth=2)
+            ax.plot(dados.index, dados['Close'], label='Preço de Fechamento', linewidth=2, color='#1f77b4')
             
             # Destacar divisão treino/teste
             split_date = dados.index[len(X_train)]
-            ax.axvline(x=split_date, color='red', linestyle='--', label='Divisão Treino/Teste')
+            ax.axvline(x=split_date, color='red', linestyle='--', linewidth=2, label='Divisão Treino/Teste')
             
             ax.set_xlabel('Data', fontsize=12)
             ax.set_ylabel('Preço ($)', fontsize=12)
-            ax.set_title(f'Histórico de Preços - {acao_selecionada}', fontsize=14)
+            ax.set_title(f'Histórico de Preços - {acao_selecionada}', fontsize=14, fontweight='bold')
             ax.legend()
             ax.grid(True, alpha=0.3)
+            plt.tight_layout()
             st.pyplot(fig)
+            plt.close()
             
             # Comparação de métricas
             st.subheader("Comparação de Performance dos Modelos")
@@ -299,27 +361,28 @@ if acao_selecionada:
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
             
             # Scatter plot
-            ax1.scatter(y_test, resultado['predicoes'], alpha=0.6, edgecolors='k')
+            ax1.scatter(y_test, resultado['predicoes'], alpha=0.6, edgecolors='k', s=40)
             ax1.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 
                     'r--', lw=2, label='Predição Perfeita')
             ax1.set_xlabel('Valores Reais ($)', fontsize=11)
             ax1.set_ylabel('Predições ($)', fontsize=11)
-            ax1.set_title(f'{modelo_analise} - Predições vs Real', fontsize=12)
+            ax1.set_title(f'{modelo_analise} - Predições vs Real', fontsize=12, fontweight='bold')
             ax1.legend()
             ax1.grid(True, alpha=0.3)
             
             # Linha do tempo
-            ax2.plot(range(len(y_test)), y_test, label='Real', linewidth=2)
+            ax2.plot(range(len(y_test)), y_test, label='Real', linewidth=2, color='#1f77b4')
             ax2.plot(range(len(y_test)), resultado['predicoes'], 
-                    label='Predição', linewidth=2, alpha=0.7)
+                    label='Predição', linewidth=2, alpha=0.7, color='#ff7f0e')
             ax2.set_xlabel('Observação', fontsize=11)
             ax2.set_ylabel('Preço ($)', fontsize=11)
-            ax2.set_title(f'{modelo_analise} - Série Temporal', fontsize=12)
+            ax2.set_title(f'{modelo_analise} - Série Temporal', fontsize=12, fontweight='bold')
             ax2.legend()
             ax2.grid(True, alpha=0.3)
             
             plt.tight_layout()
             st.pyplot(fig)
+            plt.close()
             
             # Análise de Resíduos
             st.subheader("Análise de Resíduos")
@@ -329,36 +392,37 @@ if acao_selecionada:
             fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(14, 10))
             
             # Histograma
-            ax1.hist(residuos, bins=30, edgecolor='black', alpha=0.7)
-            ax1.axvline(x=0, color='red', linestyle='--')
+            ax1.hist(residuos, bins=30, edgecolor='black', alpha=0.7, color='skyblue')
+            ax1.axvline(x=0, color='red', linestyle='--', linewidth=2)
             ax1.set_xlabel('Resíduos ($)', fontsize=11)
             ax1.set_ylabel('Frequência', fontsize=11)
-            ax1.set_title('Distribuição dos Resíduos', fontsize=12)
+            ax1.set_title('Distribuição dos Resíduos', fontsize=12, fontweight='bold')
             ax1.grid(True, alpha=0.3)
             
             # Q-Q Plot
             stats.probplot(residuos, dist="norm", plot=ax2)
-            ax2.set_title('Q-Q Plot', fontsize=12)
+            ax2.set_title('Q-Q Plot', fontsize=12, fontweight='bold')
             ax2.grid(True, alpha=0.3)
             
             # Resíduos vs Predições
-            ax3.scatter(resultado['predicoes'], residuos, alpha=0.6, edgecolors='k')
-            ax3.axhline(y=0, color='red', linestyle='--')
+            ax3.scatter(resultado['predicoes'], residuos, alpha=0.6, edgecolors='k', s=40)
+            ax3.axhline(y=0, color='red', linestyle='--', linewidth=2)
             ax3.set_xlabel('Valores Preditos ($)', fontsize=11)
             ax3.set_ylabel('Resíduos ($)', fontsize=11)
-            ax3.set_title('Resíduos vs Predições', fontsize=12)
+            ax3.set_title('Resíduos vs Predições', fontsize=12, fontweight='bold')
             ax3.grid(True, alpha=0.3)
             
             # Resíduos no tempo
-            ax4.plot(range(len(residuos)), residuos, alpha=0.7)
-            ax4.axhline(y=0, color='red', linestyle='--')
+            ax4.plot(range(len(residuos)), residuos, alpha=0.7, color='#2ca02c')
+            ax4.axhline(y=0, color='red', linestyle='--', linewidth=2)
             ax4.set_xlabel('Observação', fontsize=11)
             ax4.set_ylabel('Resíduos ($)', fontsize=11)
-            ax4.set_title('Resíduos ao Longo do Tempo', fontsize=12)
+            ax4.set_title('Resíduos ao Longo do Tempo', fontsize=12, fontweight='bold')
             ax4.grid(True, alpha=0.3)
             
             plt.tight_layout()
             st.pyplot(fig)
+            plt.close()
             
             # Coeficientes
             if modelo_analise != 'Polinomial (grau 2)':
@@ -378,9 +442,11 @@ if acao_selecionada:
                 ax.barh(coef_df['Feature'], coef_df['Coeficiente'], color=colors, alpha=0.7)
                 ax.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
                 ax.set_xlabel('Valor do Coeficiente', fontsize=11)
-                ax.set_title('Importância das Features', fontsize=12)
+                ax.set_title('Importância das Features', fontsize=12, fontweight='bold')
                 ax.grid(True, alpha=0.3, axis='x')
+                plt.tight_layout()
                 st.pyplot(fig)
+                plt.close()
         
         # TAB 3: VISUALIZAÇÕES
         with tab3:
@@ -396,12 +462,13 @@ if acao_selecionada:
                        'r--', lw=2)
                 ax.set_xlabel('Real ($)', fontsize=10)
                 ax.set_ylabel('Predição ($)', fontsize=10)
-                ax.set_title(f'{nome}\nR²={resultado["r2"]:.4f}', fontsize=11)
+                ax.set_title(f'{nome}\nR²={resultado["r2"]:.4f}', fontsize=11, fontweight='bold')
                 ax.grid(True, alpha=0.3)
             
             fig.delaxes(axes[-1])
             plt.tight_layout()
             st.pyplot(fig)
+            plt.close()
         
         # TAB 4: DOCUMENTAÇÃO
         with tab4:
@@ -424,6 +491,11 @@ if acao_selecionada:
             - **RMSE**: Raiz do erro quadrático médio
             - **MAE**: Erro absoluto médio
             - **MSE**: Erro quadrático médio
+            
+            ### Limitações do Yahoo Finance
+            - Rate limit: máximo de requisições por minuto
+            - Aguarde alguns minutos se encontrar erro de rate limit
+            - Dados em cache são mantidos por 2 horas
             """)
 
 # Rodapé
