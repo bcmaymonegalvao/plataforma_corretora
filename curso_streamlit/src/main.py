@@ -14,7 +14,7 @@ import time
 
 
 # ============================================================
-# CONFIGURAÇÃO GERAL
+# CONFIGURAÇÃO DA PÁGINA
 # ============================================================
 
 st.set_page_config(
@@ -24,31 +24,436 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown(
-    """
-    <style>
-        .block-container {
-            padding-top: 1.5rem;
-            padding-bottom: 2rem;
-        }
-        .small-text {
-            color: #666;
-            font-size: 0.9rem;
-        }
-        .ux-card {
-            padding: 1rem;
-            border-radius: 0.8rem;
-            border: 1px solid #e6e6e6;
-            background-color: #fafafa;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+
+# ============================================================
+# TEMA VISUAL — COLORMAP PLASMA
+# ============================================================
+
+PLASMA = {
+    "deep": "#0d0887",
+    "purple": "#5b02a3",
+    "magenta": "#9a179b",
+    "pink": "#cb4679",
+    "coral": "#ed7953",
+    "orange": "#fb9f3a",
+    "yellow": "#fdca26",
+    "lime": "#f0f921",
+    "background": "#f8f7fc",
+    "surface": "#ffffff",
+    "text": "#1f1f29",
+    "muted": "#6b6478",
+    "border": "#ece7f5",
+}
+
+PLASMA_SEQUENCE = [
+    PLASMA["deep"],
+    PLASMA["purple"],
+    PLASMA["magenta"],
+    PLASMA["pink"],
+    PLASMA["coral"],
+    PLASMA["orange"],
+    PLASMA["yellow"],
+]
+
+
+def aplicar_tema_plasma():
+    st.markdown(
+        f"""
+        <style>
+            .stApp {{
+                background:
+                    radial-gradient(circle at top left, rgba(240, 249, 33, 0.12), transparent 28%),
+                    radial-gradient(circle at top right, rgba(203, 70, 121, 0.10), transparent 30%),
+                    linear-gradient(180deg, #fbf9ff 0%, {PLASMA["background"]} 100%);
+            }}
+
+            .block-container {{
+                padding-top: 1.6rem;
+                padding-bottom: 2.5rem;
+                max-width: 1280px;
+            }}
+
+            section[data-testid="stSidebar"] {{
+                background:
+                    linear-gradient(
+                        180deg,
+                        rgba(13, 8, 135, 0.98) 0%,
+                        rgba(91, 2, 163, 0.97) 52%,
+                        rgba(154, 23, 155, 0.95) 100%
+                    );
+            }}
+
+            section[data-testid="stSidebar"] h1,
+            section[data-testid="stSidebar"] h2,
+            section[data-testid="stSidebar"] h3,
+            section[data-testid="stSidebar"] p,
+            section[data-testid="stSidebar"] label,
+            section[data-testid="stSidebar"] span {{
+                color: #ffffff;
+            }}
+
+            section[data-testid="stSidebar"] div[data-baseweb="select"] span {{
+                color: {PLASMA["text"]} !important;
+            }}
+
+            section[data-testid="stSidebar"] div[data-baseweb="select"] > div {{
+                background-color: rgba(255, 255, 255, 0.96);
+                border-radius: 12px;
+            }}
+
+            section[data-testid="stSidebar"] input {{
+                color: {PLASMA["text"]} !important;
+            }}
+
+            .stButton > button {{
+                border-radius: 14px;
+                border: 1px solid rgba(253, 202, 38, 0.45);
+                background: linear-gradient(
+                    90deg,
+                    {PLASMA["magenta"]},
+                    {PLASMA["coral"]},
+                    {PLASMA["orange"]}
+                );
+                color: white;
+                font-weight: 800;
+                padding: 0.65rem 1rem;
+                box-shadow: 0 8px 22px rgba(203, 70, 121, 0.25);
+                transition: all 0.2s ease-in-out;
+            }}
+
+            .stButton > button:hover {{
+                transform: translateY(-1px);
+                box-shadow: 0 10px 26px rgba(203, 70, 121, 0.36);
+                border-color: {PLASMA["yellow"]};
+                color: white;
+            }}
+
+            button[data-baseweb="tab"] {{
+                border-radius: 999px;
+                padding: 0.5rem 1rem;
+                font-weight: 700;
+            }}
+
+            button[data-baseweb="tab"][aria-selected="true"] {{
+                background: linear-gradient(90deg, {PLASMA["deep"]}, {PLASMA["magenta"]});
+                color: white;
+            }}
+
+            div[data-testid="stDataFrame"] {{
+                border-radius: 16px;
+                overflow: hidden;
+                border: 1px solid {PLASMA["border"]};
+                box-shadow: 0 8px 24px rgba(13, 8, 135, 0.06);
+            }}
+
+            .hero-card {{
+                padding: 1.7rem 1.8rem;
+                border-radius: 26px;
+                background:
+                    linear-gradient(
+                        120deg,
+                        rgba(13, 8, 135, 0.97),
+                        rgba(154, 23, 155, 0.92),
+                        rgba(237, 121, 83, 0.90)
+                    ),
+                    radial-gradient(circle at right, rgba(240, 249, 33, 0.28), transparent 30%);
+                color: white;
+                box-shadow: 0 18px 42px rgba(13, 8, 135, 0.22);
+                margin-bottom: 1.2rem;
+            }}
+
+            .hero-title {{
+                font-size: 2.15rem;
+                font-weight: 850;
+                margin-bottom: 0.35rem;
+                letter-spacing: -0.03em;
+            }}
+
+            .hero-subtitle {{
+                font-size: 1.02rem;
+                line-height: 1.55;
+                max-width: 920px;
+                opacity: 0.95;
+                margin-bottom: 0;
+            }}
+
+            .metric-card {{
+                min-height: 132px;
+                padding: 1.05rem 1.1rem;
+                border-radius: 22px;
+                background: rgba(255, 255, 255, 0.94);
+                border: 1px solid {PLASMA["border"]};
+                box-shadow: 0 10px 28px rgba(13, 8, 135, 0.08);
+                position: relative;
+                overflow: hidden;
+                margin-bottom: 0.9rem;
+            }}
+
+            .metric-card::before {{
+                content: "";
+                position: absolute;
+                inset: 0 auto 0 0;
+                width: 7px;
+                background: var(--accent);
+            }}
+
+            .metric-card::after {{
+                content: "";
+                position: absolute;
+                width: 110px;
+                height: 110px;
+                right: -45px;
+                top: -45px;
+                border-radius: 50%;
+                background: var(--accent-soft);
+            }}
+
+            .metric-icon {{
+                font-size: 1.45rem;
+                margin-bottom: 0.35rem;
+                position: relative;
+                z-index: 2;
+            }}
+
+            .metric-label {{
+                color: {PLASMA["muted"]};
+                font-size: 0.82rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.25rem;
+                position: relative;
+                z-index: 2;
+            }}
+
+            .metric-value {{
+                color: {PLASMA["text"]};
+                font-size: 1.45rem;
+                font-weight: 850;
+                line-height: 1.15;
+                letter-spacing: -0.03em;
+                position: relative;
+                z-index: 2;
+                word-break: break-word;
+            }}
+
+            .metric-help {{
+                color: {PLASMA["muted"]};
+                font-size: 0.83rem;
+                margin-top: 0.45rem;
+                line-height: 1.35;
+                position: relative;
+                z-index: 2;
+            }}
+
+            .section-card {{
+                padding: 1.2rem 1.25rem;
+                border-radius: 22px;
+                background: rgba(255, 255, 255, 0.90);
+                border: 1px solid {PLASMA["border"]};
+                box-shadow: 0 10px 28px rgba(13, 8, 135, 0.07);
+                margin-bottom: 1rem;
+            }}
+
+            .section-title {{
+                display: flex;
+                align-items: center;
+                gap: 0.55rem;
+                color: {PLASMA["text"]};
+                font-size: 1.35rem;
+                font-weight: 850;
+                margin-bottom: 0.2rem;
+                letter-spacing: -0.02em;
+            }}
+
+            .section-subtitle {{
+                color: {PLASMA["muted"]};
+                font-size: 0.95rem;
+                margin-bottom: 0.5rem;
+            }}
+
+            .badge {{
+                display: inline-block;
+                padding: 0.28rem 0.65rem;
+                border-radius: 999px;
+                background: linear-gradient(90deg, {PLASMA["deep"]}, {PLASMA["magenta"]});
+                color: white;
+                font-weight: 800;
+                font-size: 0.78rem;
+                letter-spacing: 0.02em;
+            }}
+
+            .best-model-card {{
+                padding: 1.2rem 1.25rem;
+                border-radius: 22px;
+                background:
+                    linear-gradient(135deg, rgba(240, 249, 33, 0.18), rgba(251, 159, 58, 0.14)),
+                    #ffffff;
+                border: 1px solid rgba(253, 202, 38, 0.55);
+                box-shadow: 0 10px 28px rgba(251, 159, 58, 0.14);
+                margin: 0.8rem 0 1.1rem 0;
+            }}
+
+            .best-model-title {{
+                color: {PLASMA["deep"]};
+                font-size: 1rem;
+                font-weight: 850;
+                margin-bottom: 0.25rem;
+            }}
+
+            .best-model-value {{
+                color: {PLASMA["magenta"]};
+                font-size: 1.45rem;
+                font-weight: 900;
+                letter-spacing: -0.03em;
+            }}
+
+            .small-muted {{
+                color: {PLASMA["muted"]};
+                font-size: 0.9rem;
+                line-height: 1.45;
+            }}
+
+            .info-box {{
+                padding: 1rem 1.15rem;
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.92);
+                border-left: 7px solid {PLASMA["orange"]};
+                border-top: 1px solid {PLASMA["border"]};
+                border-right: 1px solid {PLASMA["border"]};
+                border-bottom: 1px solid {PLASMA["border"]};
+                box-shadow: 0 8px 24px rgba(13, 8, 135, 0.06);
+                color: {PLASMA["text"]};
+                margin-bottom: 1rem;
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def hero_plasma():
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">📈 Análise de Regressão Linear em Ações</div>
+            <p class="hero-subtitle">
+                Compare modelos, acompanhe métricas de erro e visualize o comportamento histórico
+                das ações em uma interface mais clara, interativa e visualmente consistente.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def metric_card(
+    label,
+    value,
+    help_text="",
+    icon="📌",
+    color="#9a179b",
+    soft_color="rgba(154, 23, 155, 0.12)"
+):
+    st.markdown(
+        f"""
+        <div class="metric-card" style="--accent: {color}; --accent-soft: {soft_color};">
+            <div class="metric-icon">{icon}</div>
+            <div class="metric-label">{label}</div>
+            <div class="metric-value">{value}</div>
+            <div class="metric-help">{help_text}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def section_header(title, subtitle="", icon="✨"):
+    st.markdown(
+        f"""
+        <div class="section-card">
+            <div class="section-title">{icon} {title}</div>
+            <div class="section-subtitle">{subtitle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def best_model_card(modelo, r2, interpretacao):
+    st.markdown(
+        f"""
+        <div class="best-model-card">
+            <div class="badge">🏆 Melhor modelo</div>
+            <div class="best-model-title" style="margin-top: 0.7rem;">
+                Modelo com maior R² no conjunto de teste
+            </div>
+            <div class="best-model-value">{modelo}</div>
+            <div class="small-muted">
+                R² = <strong>{r2:.4f}</strong>. {interpretacao}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def info_box(texto):
+    st.markdown(
+        f"""
+        <div class="info-box">
+            {texto}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def estilizar_figura_plasma(fig, titulo=None, altura=None):
+    fig.update_layout(
+        template="plotly_white",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(255,255,255,0.92)",
+        font=dict(
+            family="Arial, sans-serif",
+            color=PLASMA["text"],
+            size=13
+        ),
+        title=dict(
+            text=titulo if titulo else fig.layout.title.text,
+            font=dict(size=20, color=PLASMA["deep"]),
+            x=0.02
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        margin=dict(l=20, r=20, t=70, b=40),
+    )
+
+    if altura:
+        fig.update_layout(height=altura)
+
+    fig.update_xaxes(
+        showgrid=True,
+        gridcolor="rgba(13, 8, 135, 0.08)",
+        zeroline=False
+    )
+
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor="rgba(13, 8, 135, 0.08)",
+        zeroline=False
+    )
+
+    return fig
 
 
 # ============================================================
-# DADOS AUXILIARES DE UX
+# DADOS AUXILIARES
 # ============================================================
 
 TICKERS = {
@@ -100,7 +505,7 @@ FEATURES_CONFIG = {
 
 
 # ============================================================
-# FUNÇÕES
+# FUNÇÕES DE DADOS E MODELAGEM
 # ============================================================
 
 @st.cache_data(ttl=7200)
@@ -138,6 +543,7 @@ def carregar_dados_yfinance(ticker, anos=5, max_retries=3):
             ]
 
             colunas_necessarias = {"Close", "High", "Low"}
+
             if not colunas_necessarias.issubset(set(df.columns)):
                 return pd.DataFrame(), "Os dados retornados não possuem as colunas necessárias."
 
@@ -169,6 +575,7 @@ def carregar_dados_yfinance(ticker, anos=5, max_retries=3):
                 if tentativa < max_retries - 1:
                     time.sleep(2 ** (tentativa + 1))
                     continue
+
                 return (
                     pd.DataFrame(),
                     "O Yahoo Finance bloqueou temporariamente as requisições. "
@@ -186,6 +593,7 @@ def carregar_dados_yfinance(ticker, anos=5, max_retries=3):
 
 def calcular_metricas(y_test, y_pred, coeficientes=None, intercepto=None):
     mse = mean_squared_error(y_test, y_pred)
+
     return {
         "predicoes": y_pred,
         "mse": mse,
@@ -221,11 +629,13 @@ def treinar_modelos(X_train, y_train, X_test, y_test):
         )
 
     poly = PolynomialFeatures(degree=2)
+
     X_train_poly = poly.fit_transform(X_train)
     X_test_poly = poly.transform(X_test)
 
     modelo_poly = LinearRegression()
     modelo_poly.fit(X_train_poly, y_train)
+
     y_pred_poly = modelo_poly.predict(X_test_poly)
 
     modelos["Polinomial — grau 2"] = (poly, modelo_poly)
@@ -259,8 +669,13 @@ def criar_df_metricas(resultados):
     })
 
     metricas_df["Interpretação"] = metricas_df["R²"].apply(interpretar_r2)
+
     return metricas_df.sort_values("R²", ascending=False)
 
+
+# ============================================================
+# FUNÇÕES DE VISUALIZAÇÃO
+# ============================================================
 
 def plotar_historico(dados, acao, split_date):
     fig = go.Figure()
@@ -270,26 +685,50 @@ def plotar_historico(dados, acao, split_date):
             x=dados.index,
             y=dados["Close"],
             mode="lines",
-            name="Preço de fechamento"
+            name="Preço de fechamento",
+            line=dict(color=PLASMA["magenta"], width=3),
+            fill="tozeroy",
+            fillcolor="rgba(154, 23, 155, 0.08)"
         )
     )
 
-    fig.add_vline(
+    fig.add_shape(
+        type="line",
+        x0=split_date,
+        x1=split_date,
+        y0=0,
+        y1=1,
+        xref="x",
+        yref="paper",
+        line=dict(
+            color=PLASMA["orange"],
+            width=2,
+            dash="dash"
+        )
+    )
+
+    fig.add_annotation(
         x=split_date,
-        line_dash="dash",
-        annotation_text="Início do teste",
-        annotation_position="top"
+        y=1,
+        xref="x",
+        yref="paper",
+        text="Início do teste",
+        showarrow=False,
+        yshift=18,
+        font=dict(color=PLASMA["orange"], size=12)
     )
 
     fig.update_layout(
-        title=f"Histórico de preços — {acao}",
         xaxis_title="Data",
         yaxis_title="Preço de fechamento",
-        hovermode="x unified",
-        height=500
+        hovermode="x unified"
     )
 
-    return fig
+    return estilizar_figura_plasma(
+        fig,
+        titulo=f"Histórico de preços — {acao}",
+        altura=500
+    )
 
 
 def plotar_predicoes(y_test, y_pred, modelo_nome):
@@ -299,7 +738,8 @@ def plotar_predicoes(y_test, y_pred, modelo_nome):
         go.Scatter(
             y=y_test,
             mode="lines",
-            name="Valor real"
+            name="Valor real",
+            line=dict(color=PLASMA["deep"], width=3)
         )
     )
 
@@ -307,19 +747,22 @@ def plotar_predicoes(y_test, y_pred, modelo_nome):
         go.Scatter(
             y=y_pred,
             mode="lines",
-            name="Predição"
+            name="Predição",
+            line=dict(color=PLASMA["orange"], width=3)
         )
     )
 
     fig.update_layout(
-        title=f"Valores reais vs predições — {modelo_nome}",
         xaxis_title="Observação no conjunto de teste",
         yaxis_title="Preço",
-        hovermode="x unified",
-        height=450
+        hovermode="x unified"
     )
 
-    return fig
+    return estilizar_figura_plasma(
+        fig,
+        titulo=f"Valores reais vs predições — {modelo_nome}",
+        altura=450
+    )
 
 
 def plotar_scatter_real_predito(y_test, y_pred, modelo_nome):
@@ -336,6 +779,15 @@ def plotar_scatter_real_predito(y_test, y_pred, modelo_nome):
         height=450
     )
 
+    fig.update_traces(
+        marker=dict(
+            color=PLASMA["magenta"],
+            size=8,
+            opacity=0.72,
+            line=dict(width=0.8, color="white")
+        )
+    )
+
     min_val = min(y_test.min(), y_pred.min())
     max_val = max(y_test.max(), y_pred.max())
 
@@ -344,11 +796,12 @@ def plotar_scatter_real_predito(y_test, y_pred, modelo_nome):
             x=[min_val, max_val],
             y=[min_val, max_val],
             mode="lines",
-            name="Predição perfeita"
+            name="Predição perfeita",
+            line=dict(color=PLASMA["orange"], dash="dash", width=3)
         )
     )
 
-    return fig
+    return estilizar_figura_plasma(fig, altura=450)
 
 
 def plotar_residuos(y_test, y_pred):
@@ -368,23 +821,87 @@ def plotar_residuos(y_test, y_pred):
         height=450
     )
 
-    fig.add_hline(y=0, line_dash="dash")
+    fig.update_traces(
+        marker=dict(
+            color=PLASMA["pink"],
+            size=8,
+            opacity=0.72,
+            line=dict(width=0.8, color="white")
+        )
+    )
 
-    return fig, residuos
+    fig.add_hline(
+        y=0,
+        line_dash="dash",
+        line_color=PLASMA["orange"]
+    )
+
+    return estilizar_figura_plasma(fig, altura=450), residuos
+
+
+def plotar_ranking_modelos(metricas_df):
+    fig = px.bar(
+        metricas_df.sort_values("R²", ascending=True),
+        x="R²",
+        y="Modelo",
+        orientation="h",
+        color="R²",
+        color_continuous_scale="Plasma",
+        text="R²",
+        title="Comparação dos modelos por R²"
+    )
+
+    fig.update_traces(
+        texttemplate="%{text:.4f}",
+        textposition="outside"
+    )
+
+    fig.update_layout(
+        coloraxis_showscale=False,
+        xaxis_title="R² no conjunto de teste",
+        yaxis_title="Modelo"
+    )
+
+    return estilizar_figura_plasma(fig, altura=430)
+
+
+def plotar_coeficientes(coef_df):
+    fig = px.bar(
+        coef_df,
+        x="Coeficiente",
+        y="Variável",
+        orientation="h",
+        color="Coeficiente",
+        color_continuous_scale="Plasma",
+        title="Peso das variáveis no modelo",
+        height=450
+    )
+
+    fig.add_vline(
+        x=0,
+        line_color=PLASMA["deep"],
+        line_width=2
+    )
+
+    fig.update_layout(
+        coloraxis_colorbar=dict(title="Coeficiente"),
+        xaxis_title="Coeficiente padronizado",
+        yaxis_title="Variável"
+    )
+
+    return estilizar_figura_plasma(fig, altura=450)
 
 
 # ============================================================
-# CABEÇALHO
+# APLICAÇÃO DO TEMA E CABEÇALHO
 # ============================================================
 
-st.title("📈 Análise de Regressão Linear em Ações")
+aplicar_tema_plasma()
+hero_plasma()
 
 st.markdown(
     """
-    Analise dados históricos de ações, compare modelos de regressão e visualize
-    a qualidade das predições de forma guiada.
-
-    <span class="small-text">
+    <span class="small-muted">
     Uso educacional. Este app não é recomendação de investimento.
     </span>
     """,
@@ -406,7 +923,7 @@ with st.expander("Como usar este app em 3 passos"):
 # ============================================================
 
 with st.sidebar:
-    st.header("⚙️ Configurações da análise")
+    st.header("⚙️ Configurações")
 
     modo_iniciante = st.toggle(
         "Modo iniciante",
@@ -471,7 +988,7 @@ with st.sidebar:
     )
 
     limpar_cache = st.button(
-        "Limpar cache dos dados",
+        "🧹 Limpar cache dos dados",
         use_container_width=True,
         help="Útil se o Yahoo Finance retornar dados inconsistentes ou antigos."
     )
@@ -486,12 +1003,15 @@ with st.sidebar:
 # ============================================================
 
 if not executar:
-    st.info("Configure a análise na barra lateral e clique em **Executar análise**.")
+    info_box(
+        "Configure a análise na barra lateral e clique em "
+        "<strong>Executar análise</strong> para iniciar."
+    )
     st.stop()
 
 
 # ============================================================
-# VALIDAÇÕES DE ENTRADA
+# VALIDAÇÕES
 # ============================================================
 
 if not features_selecionadas_labels:
@@ -507,7 +1027,7 @@ test_size = test_size_percent / 100
 
 
 # ============================================================
-# CARREGAMENTO DOS DADOS
+# PIPELINE PRINCIPAL
 # ============================================================
 
 with st.status("Preparando análise...", expanded=True) as status:
@@ -573,6 +1093,7 @@ with st.status("Preparando análise...", expanded=True) as status:
     X_test_scaled = scaler.transform(X_test)
 
     st.write("Treinando modelos...")
+
     modelos, resultados = treinar_modelos(
         X_train_scaled,
         y_train,
@@ -595,22 +1116,50 @@ st.success(f"Análise concluída para **{ticker_label}**.")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric("Observações", f"{len(dados):,}".replace(",", "."))
+    metric_card(
+        label="Observações",
+        value=f"{len(dados):,}".replace(",", "."),
+        help_text="Linhas usadas após limpeza e criação das variáveis.",
+        icon="🗂️",
+        color=PLASMA["deep"],
+        soft_color="rgba(13, 8, 135, 0.12)"
+    )
 
 with col2:
-    st.metric("Variáveis usadas", len(features_disponiveis))
+    metric_card(
+        label="Variáveis",
+        value=str(len(features_disponiveis)),
+        help_text="Quantidade de atributos usados pelos modelos.",
+        icon="🧩",
+        color=PLASMA["purple"],
+        soft_color="rgba(91, 2, 163, 0.12)"
+    )
 
 with col3:
-    st.metric("Melhor modelo", melhor_modelo)
+    metric_card(
+        label="Melhor modelo",
+        value=melhor_modelo,
+        help_text="Modelo com maior R² no conjunto de teste.",
+        icon="🏆",
+        color=PLASMA["magenta"],
+        soft_color="rgba(154, 23, 155, 0.13)"
+    )
 
 with col4:
-    st.metric("Melhor R²", f"{metricas_df.iloc[0]['R²']:.4f}")
-
-if modo_iniciante:
-    st.info(
-        f"O melhor modelo nesta execução foi **{melhor_modelo}**. "
-        f"Interpretação: {interpretar_r2(metricas_df.iloc[0]['R²'])}"
+    metric_card(
+        label="Melhor R²",
+        value=f"{metricas_df.iloc[0]['R²']:.4f}",
+        help_text="Quanto maior, melhor o ajuste no teste.",
+        icon="📊",
+        color=PLASMA["orange"],
+        soft_color="rgba(251, 159, 58, 0.15)"
     )
+
+best_model_card(
+    melhor_modelo,
+    metricas_df.iloc[0]["R²"],
+    interpretar_r2(metricas_df.iloc[0]["R²"])
+)
 
 
 # ============================================================
@@ -629,11 +1178,15 @@ tab_resumo, tab_modelos, tab_diagnostico, tab_dados, tab_ajuda = st.tabs(
 
 
 # ============================================================
-# TAB 1 — RESUMO
+# ABA 1 — RESUMO
 # ============================================================
 
 with tab_resumo:
-    st.header("Resumo da análise")
+    section_header(
+        title="Resumo da análise",
+        subtitle="Visão geral dos dados, configuração utilizada e comparação inicial dos modelos.",
+        icon="📊"
+    )
 
     col1, col2 = st.columns([2, 1])
 
@@ -643,16 +1196,29 @@ with tab_resumo:
         st.plotly_chart(fig_historico, use_container_width=True)
 
     with col2:
-        st.subheader("Configuração usada")
+        section_header(
+            title="Configuração usada",
+            subtitle="Parâmetros escolhidos para esta execução.",
+            icon="⚙️"
+        )
 
-        st.write(f"**Ação:** {ticker_label}")
-        st.write(f"**Período:** {anos_historico} ano(s)")
-        st.write(f"**Treino:** {100 - test_size_percent}%")
-        st.write(f"**Teste:** {test_size_percent}%")
+        metric_card(
+            label="Ação",
+            value=ticker,
+            help_text=ticker_label,
+            icon="🏢",
+            color=PLASMA["deep"],
+            soft_color="rgba(13, 8, 135, 0.12)"
+        )
 
-        with st.expander("Variáveis selecionadas"):
-            for label in features_selecionadas_labels:
-                st.markdown(f"- **{label}**")
+        metric_card(
+            label="Período",
+            value=f"{anos_historico} ano(s)",
+            help_text=f"Treino: {100 - test_size_percent}% | Teste: {test_size_percent}%",
+            icon="🕒",
+            color=PLASMA["pink"],
+            soft_color="rgba(203, 70, 121, 0.13)"
+        )
 
     st.subheader("Ranking dos modelos")
 
@@ -669,6 +1235,9 @@ with tab_resumo:
         hide_index=True
     )
 
+    fig_ranking = plotar_ranking_modelos(metricas_df)
+    st.plotly_chart(fig_ranking, use_container_width=True)
+
     csv_metricas = metricas_df.to_csv(index=False).encode("utf-8")
 
     st.download_button(
@@ -680,11 +1249,15 @@ with tab_resumo:
 
 
 # ============================================================
-# TAB 2 — MODELOS
+# ABA 2 — MODELOS
 # ============================================================
 
 with tab_modelos:
-    st.header("Análise dos modelos")
+    section_header(
+        title="Análise dos modelos",
+        subtitle="Compare métricas, predições e coeficientes do modelo selecionado.",
+        icon="🔍"
+    )
 
     modelo_analise = st.selectbox(
         "Escolha um modelo para analisar",
@@ -698,16 +1271,44 @@ with tab_modelos:
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric("R²", f"{resultado['r2']:.4f}")
+        metric_card(
+            label="R²",
+            value=f"{resultado['r2']:.4f}",
+            help_text="Capacidade explicativa do modelo.",
+            icon="📈",
+            color=PLASMA["deep"],
+            soft_color="rgba(13, 8, 135, 0.12)"
+        )
 
     with col2:
-        st.metric("RMSE", f"{resultado['rmse']:.2f}")
+        metric_card(
+            label="RMSE",
+            value=f"{resultado['rmse']:.2f}",
+            help_text="Erro médio penalizando erros grandes.",
+            icon="📉",
+            color=PLASMA["magenta"],
+            soft_color="rgba(154, 23, 155, 0.13)"
+        )
 
     with col3:
-        st.metric("MAE", f"{resultado['mae']:.2f}")
+        metric_card(
+            label="MAE",
+            value=f"{resultado['mae']:.2f}",
+            help_text="Erro médio absoluto.",
+            icon="🎯",
+            color=PLASMA["coral"],
+            soft_color="rgba(237, 121, 83, 0.14)"
+        )
 
     with col4:
-        st.metric("MSE", f"{resultado['mse']:.2f}")
+        metric_card(
+            label="MSE",
+            value=f"{resultado['mse']:.2f}",
+            help_text="Erro quadrático médio.",
+            icon="🧮",
+            color=PLASMA["orange"],
+            soft_color="rgba(251, 159, 58, 0.15)"
+        )
 
     if modo_iniciante:
         with st.expander("Como interpretar essas métricas?"):
@@ -761,16 +1362,7 @@ with tab_modelos:
             hide_index=True
         )
 
-        fig_coef = px.bar(
-            coef_df,
-            x="Coeficiente",
-            y="Variável",
-            orientation="h",
-            title="Peso das variáveis no modelo",
-            height=450
-        )
-
-        fig_coef.add_vline(x=0)
+        fig_coef = plotar_coeficientes(coef_df)
         st.plotly_chart(fig_coef, use_container_width=True)
 
     else:
@@ -781,11 +1373,15 @@ with tab_modelos:
 
 
 # ============================================================
-# TAB 3 — DIAGNÓSTICO
+# ABA 3 — DIAGNÓSTICO
 # ============================================================
 
 with tab_diagnostico:
-    st.header("Diagnóstico dos erros")
+    section_header(
+        title="Diagnóstico dos erros",
+        subtitle="Avalie resíduos, dispersão dos erros e possíveis padrões não capturados pelo modelo.",
+        icon="🧪"
+    )
 
     modelo_diag = st.selectbox(
         "Modelo para diagnóstico",
@@ -806,13 +1402,34 @@ with tab_diagnostico:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Média dos resíduos", f"{np.mean(residuos):.4f}")
+        metric_card(
+            label="Média dos resíduos",
+            value=f"{np.mean(residuos):.4f}",
+            help_text="Idealmente, deve ficar próximo de zero.",
+            icon="⚖️",
+            color=PLASMA["purple"],
+            soft_color="rgba(91, 2, 163, 0.12)"
+        )
 
     with col2:
-        st.metric("Desvio dos resíduos", f"{np.std(residuos):.4f}")
+        metric_card(
+            label="Desvio dos resíduos",
+            value=f"{np.std(residuos):.4f}",
+            help_text="Indica dispersão dos erros.",
+            icon="🌊",
+            color=PLASMA["pink"],
+            soft_color="rgba(203, 70, 121, 0.13)"
+        )
 
     with col3:
-        st.metric("Maior erro absoluto", f"{np.max(np.abs(residuos)):.2f}")
+        metric_card(
+            label="Maior erro absoluto",
+            value=f"{np.max(np.abs(residuos)):.2f}",
+            help_text="Maior diferença entre real e predito.",
+            icon="🚨",
+            color=PLASMA["orange"],
+            soft_color="rgba(251, 159, 58, 0.15)"
+        )
 
     with st.expander("Histograma e Q-Q plot dos resíduos"):
         hist_fig = px.histogram(
@@ -823,10 +1440,24 @@ with tab_diagnostico:
             height=400
         )
 
-        hist_fig.add_vline(x=0, line_dash="dash")
+        hist_fig.update_traces(
+            marker=dict(
+                color=PLASMA["magenta"],
+                line=dict(color="white", width=0.6)
+            )
+        )
+
+        hist_fig.add_vline(
+            x=0,
+            line_dash="dash",
+            line_color=PLASMA["orange"]
+        )
+
+        hist_fig = estilizar_figura_plasma(hist_fig, altura=400)
         st.plotly_chart(hist_fig, use_container_width=True)
 
         qq = stats.probplot(residuos, dist="norm")
+
         qq_df = pd.DataFrame({
             "Quantis teóricos": qq[0][0],
             "Quantis observados": qq[0][1]
@@ -840,6 +1471,16 @@ with tab_diagnostico:
             height=400
         )
 
+        qq_fig.update_traces(
+            marker=dict(
+                color=PLASMA["coral"],
+                size=8,
+                opacity=0.72,
+                line=dict(width=0.8, color="white")
+            )
+        )
+
+        qq_fig = estilizar_figura_plasma(qq_fig, altura=400)
         st.plotly_chart(qq_fig, use_container_width=True)
 
     if modo_iniciante:
@@ -850,28 +1491,47 @@ with tab_diagnostico:
 
 
 # ============================================================
-# TAB 4 — DADOS
+# ABA 4 — DADOS
 # ============================================================
 
 with tab_dados:
-    st.header("Dados utilizados")
-
-    st.markdown(
-        """
-        Esta seção ajuda a verificar transparência e consistência dos dados usados no treinamento.
-        """
+    section_header(
+        title="Dados utilizados",
+        subtitle="Verifique o período, a quantidade de registros e a amostra dos dados tratados.",
+        icon="🗃️"
     )
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Data inicial", dados.index.min().strftime("%d/%m/%Y"))
+        metric_card(
+            label="Data inicial",
+            value=dados.index.min().strftime("%d/%m/%Y"),
+            help_text="Primeira data disponível após tratamento.",
+            icon="📅",
+            color=PLASMA["deep"],
+            soft_color="rgba(13, 8, 135, 0.12)"
+        )
 
     with col2:
-        st.metric("Data final", dados.index.max().strftime("%d/%m/%Y"))
+        metric_card(
+            label="Data final",
+            value=dados.index.max().strftime("%d/%m/%Y"),
+            help_text="Última data disponível no conjunto.",
+            icon="📆",
+            color=PLASMA["magenta"],
+            soft_color="rgba(154, 23, 155, 0.13)"
+        )
 
     with col3:
-        st.metric("Linhas após limpeza", len(dados))
+        metric_card(
+            label="Linhas tratadas",
+            value=str(len(dados)),
+            help_text="Registros após remoção de valores ausentes.",
+            icon="🧹",
+            color=PLASMA["orange"],
+            soft_color="rgba(251, 159, 58, 0.15)"
+        )
 
     st.subheader("Amostra dos dados")
 
@@ -897,11 +1557,15 @@ with tab_dados:
 
 
 # ============================================================
-# TAB 5 — AJUDA
+# ABA 5 — AJUDA
 # ============================================================
 
 with tab_ajuda:
-    st.header("Ajuda e documentação")
+    section_header(
+        title="Ajuda e documentação",
+        subtitle="Entenda os modelos, as métricas e as limitações da análise.",
+        icon="📚"
+    )
 
     st.subheader("O que este app faz?")
 
@@ -924,6 +1588,17 @@ with tab_ajuda:
         """
     )
 
+    st.subheader("Como interpretar as métricas?")
+
+    st.markdown(
+        """
+        - **R²:** mede a capacidade explicativa do modelo. Quanto maior, melhor.
+        - **RMSE:** mede o erro médio com penalização maior para erros grandes.
+        - **MAE:** mede o erro médio absoluto.
+        - **MSE:** mede o erro quadrático médio.
+        """
+    )
+
     st.subheader("Limitações importantes")
 
     st.warning(
@@ -935,16 +1610,15 @@ with tab_ajuda:
         """
     )
 
-    st.subheader("Como a UX foi melhorada com Nielsen?")
+    st.subheader("Melhorias de UX aplicadas")
 
     st.markdown(
         """
-        - **Status visível:** o app informa cada etapa da execução.
-        - **Prevenção de erros:** valida variáveis, dados mínimos e falhas de carregamento.
-        - **Reconhecimento:** mostra nomes amigáveis das ações e explicações das variáveis.
-        - **Controle do usuário:** análise só roda após clique no botão principal.
-        - **Ajuda contextual:** sliders, seletores e métricas possuem explicações.
-        - **Design minimalista:** informações técnicas ficam em abas e expanders.
-        - **Recuperação de erro:** mensagens explicam o que aconteceu e o que fazer.
+        - **Visibilidade do status:** o app informa carregamento, validação e treinamento.
+        - **Prevenção de erros:** valida variáveis, quantidade mínima de dados e falhas de download.
+        - **Reconhecimento:** usa nomes amigáveis das ações e explicações das variáveis.
+        - **Controle do usuário:** a análise só roda após o botão principal.
+        - **Ajuda contextual:** sliders, seletores, métricas e abas explicam sua função.
+        - **Design visual:** cards, containers, gradientes e gráficos seguem o padrão Plasma.
         """
     )
